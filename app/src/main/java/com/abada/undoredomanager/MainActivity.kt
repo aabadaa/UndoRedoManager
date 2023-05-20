@@ -33,6 +33,9 @@ class MainActivity : ComponentActivity() {
                 // A surface container using the 'background' color from the theme
                 val text1 by viewModel.text1.collectAsState("")
                 val text2 by viewModel.text2.collectAsState("")
+
+                val canUndo by viewModel.canUndo.collectAsState()
+                val canRedo by viewModel.canRedo.collectAsState()
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -43,10 +46,10 @@ class MainActivity : ComponentActivity() {
                     ) {
                         TextField(value = text1, onValueChange = viewModel::onText1Changed)
                         TextField(value = text2, onValueChange = viewModel::onText2Changed)
-                        Button(onClick = viewModel::undo) {
+                        Button(onClick = viewModel::undo, enabled = canUndo) {
                             Text("Undo")
                         }
-                        Button(onClick = viewModel::redo) {
+                        Button(onClick = viewModel::redo, enabled = canRedo) {
                             Text("redo")
                         }
                     }
@@ -67,7 +70,8 @@ class MyViewModel(
         savedStateHandle
     )
 
-
+    val canUndo = undoRedoManager.canUndoFlow
+    val canRedo = undoRedoManager.canRedoFlow
     val text1 = savedStateHandle.getStateFlow("text1", "")
     val text2 = savedStateHandle.getStateFlow("text2", "")
     fun onText1Changed(text: String) {

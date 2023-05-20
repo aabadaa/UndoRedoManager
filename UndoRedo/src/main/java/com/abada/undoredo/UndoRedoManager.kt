@@ -2,6 +2,7 @@ package com.abada.undoredo
 
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class UndoRedoManager(
     private val initialStates: Map<String, Any>,
@@ -10,7 +11,18 @@ class UndoRedoManager(
 ) {
 
     private val stack = MutableStateFlow(listOf<UndoRedoItem>())
+
+    private val _canUndoFlow = MutableStateFlow(false)
+    val canUndoFlow: StateFlow<Boolean> = _canUndoFlow
+
+    private val _canRedoFlow = MutableStateFlow(false)
+    val canRedoFlow: StateFlow<Boolean> = _canRedoFlow
     private var index: Int = -1
+        set(value) {
+            field = value
+            _canRedoFlow.value = (field + 1) in stack.value.indices
+            _canUndoFlow.value = (field) >= 0
+        }
 
     init {
         if (maxSize < 5)
@@ -19,14 +31,14 @@ class UndoRedoManager(
     }
 
     fun undo() {
-        index.takeIf { it >= 0 }?.let {
+        index.takeIf { canUndoFlow.value }?.let {
             val undoRedoItem = stack.value[it]
             savedStateHandle[undoRedoItem.key] = undoRedoItem.prevValue
             index = (it - 1)
         }
     }
 
-    fun redo() = index.let {
+    fun redo() = index.takeIf { canRedoFlow.value }?.let {
         if (it + 1 in stack.value.indices) {
             index = it + 1
             val currentState = stack.value[it + 1]
