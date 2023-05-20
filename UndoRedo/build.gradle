@@ -2,7 +2,6 @@ plugins {
     id 'com.android.library'
     id 'org.jetbrains.kotlin.android'
     id 'maven-publish'
-
 }
 
 android {
@@ -27,9 +26,18 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+    publishing {
+        multipleVariants {
+            withSourcesJar()
+            withJavadocJar()
+            allVariants()
+        }
+    }
 }
 
-dependencies {}
+dependencies {
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1'
+}
 afterEvaluate {
     publishing {
         publications {
@@ -37,7 +45,7 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.github.aabadaa'
                 artifactId = 'undo-redo-manager'
-                version = '1.0.0'
+                version = '1.0.2'
             }
         }
     }
