@@ -20,8 +20,8 @@ class UndoRedoManager(
 
     fun undo() {
         index.takeIf { it >= 0 }?.let {
-            val UndoRedoItem = stack.value[it]
-            savedStateHandle[UndoRedoItem.key] = UndoRedoItem.prevValue
+            val undoRedoItem = stack.value[it]
+            savedStateHandle[undoRedoItem.key] = undoRedoItem.prevValue
             index = (it - 1)
         }
     }
