@@ -1,6 +1,5 @@
 package com.abada.undoredo
 
-import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,7 +10,7 @@ import kotlinx.coroutines.flow.stateIn
 
 class UndoRedoManager(
     private val initialStates: Map<String, Any>,
-    private val savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: StateProvider,
     private val maxSize: Int = 10,
 ) {
     private val managerScope = CoroutineScope(Job())

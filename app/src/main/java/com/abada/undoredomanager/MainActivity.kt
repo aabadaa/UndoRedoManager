@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -19,13 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import com.abada.undoredo.SavedStateHandleProvider.Companion.asStateProvider
 import com.abada.undoredo.UndoRedoManager
 import com.abada.undoredomanager.ui.theme.UndoRedoManagerTheme
 
 class MainActivity : ComponentActivity() {
-    val viewModel by viewModels<MyViewModel>()
+    private val viewModel by viewModels<MyViewModel>()
 
-    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -60,14 +59,14 @@ class MainActivity : ComponentActivity() {
 }
 
 class MyViewModel(
-    private val savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val undoRedoManager = UndoRedoManager(
         mapOf(
             "text1" to "",
             "text2" to ""
         ),
-        savedStateHandle
+        savedStateHandle.asStateProvider
     )
 
     val canUndo = undoRedoManager.canUndoFlow
