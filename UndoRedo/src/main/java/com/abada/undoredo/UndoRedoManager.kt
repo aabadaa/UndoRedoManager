@@ -1,28 +1,27 @@
 package com.abada.undoredo
 
 import androidx.lifecycle.SavedStateHandle
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 class UndoRedoManager(
     private val initialStates: Map<String, Any>,
     private val savedStateHandle: SavedStateHandle,
     private val maxSize: Int = 10,
 ) {
-
+    private val managerScope = CoroutineScope(Job())
     private val stack = MutableStateFlow(listOf<UndoRedoItem>())
-
-    private val _canUndoFlow = MutableStateFlow(false)
-    val canUndoFlow: StateFlow<Boolean> = _canUndoFlow
-
-    private val _canRedoFlow = MutableStateFlow(false)
-    val canRedoFlow: StateFlow<Boolean> = _canRedoFlow
-    private var index: Int = -1
-        set(value) {
-            field = value
-            _canRedoFlow.value = (field + 1) in stack.value.indices
-            _canUndoFlow.value = (field) >= 0
-        }
+    private val index: MutableStateFlow<Int> = MutableStateFlow(-1)
+    val canUndoFlow = index.map { it >= 0 }
+        .stateIn(managerScope, SharingStarted.WhileSubscribed(1000), false)
+    val canRedoFlow = combine(stack, index) { stack, index ->
+        (index + 1) in stack.indices
+    }.stateIn(managerScope, SharingStarted.WhileSubscribed(1000), false)
 
     init {
         if (maxSize < 5)
@@ -31,16 +30,16 @@ class UndoRedoManager(
     }
 
     fun undo() {
-        index.takeIf { canUndoFlow.value }?.let {
+        index.value.takeIf { canUndoFlow.value }?.let {
             val undoRedoItem = stack.value[it]
             savedStateHandle[undoRedoItem.key] = undoRedoItem.prevValue
-            index = (it - 1)
+            index.value = (it - 1)
         }
     }
 
-    fun redo() = index.takeIf { canRedoFlow.value }?.let {
+    fun redo() = index.value.takeIf { canRedoFlow.value }?.let {
         if (it + 1 in stack.value.indices) {
-            index = it + 1
+            index.value = it + 1
             val currentState = stack.value[it + 1]
             savedStateHandle[currentState.key] = currentState.value
         }
@@ -50,15 +49,15 @@ class UndoRedoManager(
         if (!initialStates.containsKey(key))
             throw IllegalArgumentException("the key $key is not exist in initial states")
         val currentValue = savedStateHandle.get<T>(key)
-        val UndoRedoItem = UndoRedoItem(key, value, currentValue)
+        val undoRedoItem = UndoRedoItem(key, value, currentValue)
 
-        if (index != stack.value.lastIndex) {
-            stack.value = stack.value.take(index + 1)
+        if (index.value != stack.value.lastIndex) {
+            stack.value = stack.value.take(index.value + 1)
         }
-        stack.value += UndoRedoItem
+        stack.value += undoRedoItem
         if (stack.value.size > maxSize + initialStates.size)
             stack.value = stack.value - stack.value.first()
-        index = stack.value.lastIndex
+        index.value = stack.value.lastIndex
         savedStateHandle[key] = value
     }
 
@@ -68,7 +67,7 @@ class UndoRedoManager(
             savedStateHandle.get<List<UndoRedoItem>>(UNDO_STACK_KEY) ?: emptyList()
         stack.value = undoStack
         if (stack.value.isNotEmpty()) {
-            index = stack.value.lastIndex
+            index.value = stack.value.lastIndex
         } else {
             initialStates.forEach {
                 savedStateHandle[it.key] = it.value
