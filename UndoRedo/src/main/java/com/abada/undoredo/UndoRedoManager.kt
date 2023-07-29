@@ -37,7 +37,7 @@ class UndoRedoManager(
                     stateProvider[key] = value
                 }
             }
-            commit.onRevert?.invoke()
+            commit.onRevert?.invoke(commit.revertResult)
             index.value = (it - 1)
         }
     }
@@ -50,13 +50,18 @@ class UndoRedoManager(
                 commit.changes.forEach { (key, value) ->
                     stateProvider[key] = value
                 }
+                commit.revertResult = commit.commitAction?.invoke()
             }
         }
     }
 
-    fun commit(onUndo: (() -> Unit)? = null) {
+    fun commit(
+        actionCommit: (() -> Any?)? = null,
+        onUndo: ((Any?) -> Unit)? = null,
+    ) {
         if (!isInitialized)
             throw IllegalStateException("Please call init() before commit()")
+        val result = actionCommit?.invoke()
         val currentState = stateProvider.getAll(observedKeys)
         val previousCommit = stack.value.getOrNull(index.value)
         val previousState = previousCommit?.state ?: mapOf()
@@ -64,7 +69,7 @@ class UndoRedoManager(
             key in observedKeys && (!previousState.containsKey(key) || value != previousState[key])
         }
         if (changes.isNotEmpty()) {
-            val commit = Commit(currentState, changes, previousState, onUndo)
+            val commit = Commit(currentState, changes, previousState, onUndo, actionCommit, result)
             Log.i(javaClass.name, "commit: $commit")
 
             if (index.value != stack.value.lastIndex) {
@@ -78,6 +83,7 @@ class UndoRedoManager(
         }
     }
 
+
     fun init() {
         isInitialized = true
         val commitStack = stateProvider.get<List<Commit>>(COMMIT_STACK_KEY) ?: emptyList()
@@ -89,7 +95,7 @@ class UndoRedoManager(
 
     fun reset() {
         val initialState = stateProvider.getAll(observedKeys)
-        val initialCommit = Commit(initialState, mapOf(), mapOf(), null)
+        val initialCommit = Commit(initialState, mapOf(), mapOf(), null, null)
         stack.value = listOf(initialCommit)
         index.value = 0
     }

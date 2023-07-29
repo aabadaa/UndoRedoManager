@@ -1,6 +1,8 @@
 package com.abada.undoredomanager
 
+import android.content.ContentValues.TAG
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -76,10 +78,14 @@ class MyViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
         UndoRedoManager(stateProvider, setOf("text1", "text2"), maxSize = 100)
     val canUndo: StateFlow<Boolean> = undoRedoManager.canUndoFlow
     val canRedo: StateFlow<Boolean> = undoRedoManager.canRedoFlow
-
+    init {
+        undoRedoManager.init()
+    }
     fun set(key: String, value: Any) {
         stateProvider[key] = value
-        undoRedoManager.commit()
+        undoRedoManager.commit {
+            Log.i(TAG, "set: $key,$value")
+        }
     }
 
     fun setText1(value: String) {
