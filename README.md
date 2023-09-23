@@ -1,4 +1,4 @@
-[undo-redo-manager.demo.webm](https://github.com/aabadaa/UndoRedoManager/assets/54916786/98a1b6e0-ea3c-4d93-a18f-cc5b0b231805)# UndoRedoManager
+# UndoRedoManager
 A util class that implements undo/redo on a group of states
 ## Demo
 [undo-redo-manager.demo.webm](https://github.com/aabadaa/UndoRedoManager/assets/54916786/c8a0bf0b-c965-4d73-8546-1038981cc953)
