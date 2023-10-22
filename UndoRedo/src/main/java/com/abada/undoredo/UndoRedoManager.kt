@@ -14,6 +14,7 @@ class UndoRedoManager(
     private val observedKeys: Set<String>,
     private val maxSize: Int = 100,
     private val triggerKeys: Set<String> = observedKeys,
+    private val comparator: (String, Any?, Any?) -> Boolean = { _, a, b -> a == b },
 ) {
     private var isInitialized = false
     private val managerScope = CoroutineScope(Job())
@@ -70,7 +71,9 @@ class UndoRedoManager(
         val previousCommit = stack.value.getOrNull(index.value)
         val previousState = previousCommit?.state ?: mapOf()
         val changes = currentState.filter { (key, value) ->
-            key in triggerKeys && (!previousState.containsKey(key) || value != previousState[key])
+            key in triggerKeys && (!previousState.containsKey(key) ||
+                    !comparator.invoke(key,value, previousState[key])
+                    )
         }
         if (changes.isNotEmpty()) {
             val commit = Commit(currentState, changes, previousState, onUndo, actionCommit, result)

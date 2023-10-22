@@ -17,6 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import com.abada.undoredo.SavedStateProvider.Companion.asStateProvider
@@ -32,8 +33,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             UndoRedoManagerTheme {
                 // A surface container using the 'background' color from the theme
-                val text1 by viewModel.text1.collectAsState("")
-                val text2 by viewModel.text2.collectAsState("")
+                val text1 by viewModel.text1.collectAsState()
+                val text2 by viewModel.text2.collectAsState()
                 val count by viewModel.count.collectAsState(0)
                 val canUndo by viewModel.canUndo.collectAsState(false)
                 val canRedo by viewModel.canRedo.collectAsState(false)
@@ -45,8 +46,14 @@ class MainActivity : ComponentActivity() {
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        TextField(value = text1, onValueChange = viewModel::setText1)
-                        TextField(value = text2, onValueChange = viewModel::setText2)
+                        TextField(
+                            value = text1.asTextFieldValue,
+                            onValueChange = viewModel::setText1
+                        )
+                        TextField(
+                            value = text2.asTextFieldValue,
+                            onValueChange = viewModel::setText2
+                        )
                         Button(onClick = viewModel::incrementCount) {
                             Text(count.toString())
                         }
@@ -71,15 +78,24 @@ class MainActivity : ComponentActivity() {
 
 class MyViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     private val stateProvider = savedStateHandle.asStateProvider
-    val text1: StateFlow<String> = savedStateHandle.getStateFlow("text1", "")
-    val text2: StateFlow<String> = savedStateHandle.getStateFlow("text2", "")
+    val text1: StateFlow<ParcelableTextFieldValue> =
+        savedStateHandle.getStateFlow("text1", ParcelableTextFieldValue())
+    val text2: StateFlow<ParcelableTextFieldValue> =
+        savedStateHandle.getStateFlow("text2", ParcelableTextFieldValue())
     val count: StateFlow<Int> = savedStateHandle.getStateFlow("count", 0)
 
     private val undoRedoManager =
         UndoRedoManager(
             stateProvider, setOf("text1", "text2"), maxSize = 100,
             triggerKeys = setOf("text1"),
-        )
+            comparator = { _, a, b ->
+                when {
+                    a is ParcelableTextFieldValue && b is ParcelableTextFieldValue ->
+                        a.text == b.text
+
+                    else -> a == b
+                }
+            })
     val canUndo: StateFlow<Boolean> = undoRedoManager.canUndoFlow
     val canRedo: StateFlow<Boolean> = undoRedoManager.canRedoFlow
 
@@ -92,14 +108,14 @@ class MyViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     }
 
     fun commit() = undoRedoManager.commit()
-    fun setText1(value: String) {
-        set("text1", value)
+    fun setText1(value: TextFieldValue) {
+        set("text1", value.asParcelable)
         commit()
     }
 
 
-    fun setText2(value: String) {
-        set("text2", value)
+    fun setText2(value: TextFieldValue) {
+        set("text2", value.asParcelable)
         commit()
     }
 
