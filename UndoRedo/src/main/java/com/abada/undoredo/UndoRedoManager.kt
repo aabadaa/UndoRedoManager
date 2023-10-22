@@ -9,6 +9,25 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
+
+/**
+ * Manages the undo and redo functionality for changes in an application's state.
+ *
+ * This class allows you to track and manage changes made to a set of observed keys in the application's state.
+ * It provides methods for recording, undoing, and redoing changes, as well as initializing and resetting
+ * the commit stack.
+ *
+ * @param stateProvider An object or interface responsible for providing access to the application's state.
+ * @param observedKeys A set of keys representing the state properties to be observed and recorded.
+ * @param maxSize The maximum number of changes to keep in the undo/redo stack (default is 100).
+ * @param triggerKeys A set of keys that trigger the recording of a change when their values change.
+ *                   These keys should be a subset of observedKeys.
+ * @param comparator A function used to compare values associated with keys to determine whether a change should
+ *                  be recorded (default checks for equality).
+ *
+ * @throws IllegalArgumentException If maxSize is less than 5.
+ * @throws AssertionError If triggerKeys contain keys not present in observedKeys.
+ */
 class UndoRedoManager(
     private val stateProvider: StateProvider,
     private val observedKeys: Set<String>,
@@ -32,7 +51,10 @@ class UndoRedoManager(
             "this keys: ${triggerKeys- observedKeys} are not included in the observed key"
         }
     }
-
+    /**
+     * Undo the most recent change in the application's state.
+     * If the undo operation is possible, it reverts the last committed changes.
+     */
     fun undo() {
         index.value.takeIf { canUndoFlow.value }?.let {
             val commit = stack.value[it]
@@ -47,6 +69,10 @@ class UndoRedoManager(
         }
     }
 
+    /**
+     * Redo a previously undone change in the application's state.
+     * If the redo operation is possible, it re-applies the previously undone changes.
+     */
     fun redo() {
         index.value.takeIf { canRedoFlow.value }?.let {
             if (it + 1 in stack.value.indices) {
@@ -60,6 +86,14 @@ class UndoRedoManager(
         }
     }
 
+    /**
+     * Record a change in the application's state and add it to the commit stack.
+     *
+     * @param actionCommit An optional lambda function to perform the change action. It should return the result
+     *                    of the action. If not provided, no action is performed.
+     * @param onUndo An optional lambda function to specify actions to perform when undoing this change. It accepts
+     *               the result of the `actionCommit` as a parameter.
+     */
     fun commit(
         actionCommit: (() -> Any?)? = null,
         onUndo: ((Any?) -> Unit)? = null,
