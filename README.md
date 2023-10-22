@@ -40,7 +40,7 @@ A util class that implements undo/redo on a group of states
     undoRedoManager.undo()
     undoRedoManager.redo()
 ```
-
+check the full example in the [MainActivity](https://github.com/aabadaa/UndoRedoManager/blob/master/app/src/main/java/com/abada/undoredomanager/MainActivity.kt)
 # License
 ```xml
 Designed and developed by 2023 AbdulAleem Alsayed
