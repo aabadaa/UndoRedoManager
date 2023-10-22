@@ -13,6 +13,7 @@ class UndoRedoManager(
     private val stateProvider: StateProvider,
     private val observedKeys: Set<String>,
     private val maxSize: Int = 100,
+    private val triggerKeys: Set<String> = observedKeys,
 ) {
     private var isInitialized = false
     private val managerScope = CoroutineScope(Job())
@@ -26,6 +27,9 @@ class UndoRedoManager(
 
     init {
         if (maxSize < 5) throw IllegalArgumentException("The minimum size is 5; you passed $maxSize")
+        assert((triggerKeys - observedKeys).isEmpty()) {
+            "this keys: ${triggerKeys- observedKeys} are not included in the observed key"
+        }
     }
 
     fun undo() {
@@ -66,7 +70,7 @@ class UndoRedoManager(
         val previousCommit = stack.value.getOrNull(index.value)
         val previousState = previousCommit?.state ?: mapOf()
         val changes = currentState.filter { (key, value) ->
-            key in observedKeys && (!previousState.containsKey(key) || value != previousState[key])
+            key in triggerKeys && (!previousState.containsKey(key) || value != previousState[key])
         }
         if (changes.isNotEmpty()) {
             val commit = Commit(currentState, changes, previousState, onUndo, actionCommit, result)

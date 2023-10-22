@@ -76,7 +76,10 @@ class MyViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     val count: StateFlow<Int> = savedStateHandle.getStateFlow("count", 0)
 
     private val undoRedoManager =
-        UndoRedoManager(stateProvider, setOf("text1", "text2"), maxSize = 100)
+        UndoRedoManager(
+            stateProvider, setOf("text1", "text2"), maxSize = 100,
+            triggerKeys = setOf("text1"),
+        )
     val canUndo: StateFlow<Boolean> = undoRedoManager.canUndoFlow
     val canRedo: StateFlow<Boolean> = undoRedoManager.canRedoFlow
 
@@ -89,10 +92,16 @@ class MyViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     }
 
     fun commit() = undoRedoManager.commit()
-    fun setText1(value: String) = set("text1", value)
+    fun setText1(value: String) {
+        set("text1", value)
+        commit()
+    }
 
 
-    fun setText2(value: String) = set("text2", value)
+    fun setText2(value: String) {
+        set("text2", value)
+        commit()
+    }
 
 
     fun incrementCount() = set("count", count.value + 1)
